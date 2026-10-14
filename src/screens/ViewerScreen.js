@@ -9,6 +9,7 @@ import { useStore, favoritesOf, itemTitle, subjectName, toggleFav, setLastView }
 import { pageUri } from '../files';
 import { font } from '../theme';
 import { Icon } from '../ui';
+import { sharePages } from '../share';
 
 const BG = '#0B0C10';
 const STAR = '#F5B921';
@@ -204,15 +205,22 @@ export default function ViewerScreen({ route, nav }) {
       {chrome && (
         <>
           <View style={[styles.top, { paddingTop: insets.top + 6 }]} pointerEvents="box-none">
-            <Pressable onPress={nav.pop} hitSlop={12} style={styles.topBtn}>
-              <Icon name="back" size={24} color="#fff" />
-            </Pressable>
+            <View style={styles.topLeft}>
+              <Pressable onPress={nav.pop} hitSlop={12} style={styles.topBtn}>
+                <Icon name="back" size={24} color="#fff" />
+              </Pressable>
+            </View>
             <Text style={styles.count}>
               {index + 1} / {entries.length}
             </Text>
-            <Pressable onPress={() => item && page && toggleFav(item.id, page.id)} hitSlop={12} style={styles.topBtn}>
-              <Icon name="star" size={26} color={page && page.fav ? STAR : '#fff'} fill={page && page.fav ? STAR : 'none'} stroke={1.8} />
-            </Pressable>
+            <View style={styles.topRight}>
+              <Pressable onPress={() => item && page && sharePages([page], itemTitle(item))} hitSlop={8} style={styles.topBtn}>
+                <Icon name="share" size={23} color="#fff" stroke={1.9} />
+              </Pressable>
+              <Pressable onPress={() => item && page && toggleFav(item.id, page.id)} hitSlop={8} style={styles.topBtn}>
+                <Icon name="star" size={26} color={page && page.fav ? STAR : '#fff'} fill={page && page.fav ? STAR : 'none'} stroke={1.8} />
+              </Pressable>
+            </View>
           </View>
 
           <View style={[styles.bottom, { paddingBottom: insets.bottom + 14 }]} pointerEvents="none">
@@ -247,6 +255,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(11,12,16,0.55)',
   },
   topBtn: { width: 44, height: 40, alignItems: 'center', justifyContent: 'center' },
+  topRight: { flexDirection: 'row', alignItems: 'center', width: 88, justifyContent: 'flex-end' },
+  topLeft: { width: 88 },
   count: { fontFamily: font.semibold, fontSize: 15, color: '#fff' },
   bottom: {
     position: 'absolute',

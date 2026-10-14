@@ -54,7 +54,7 @@ const styles = themedStyles(() => ({
   grid: { paddingHorizontal: 16, paddingBottom: 40, paddingTop: 6 },
   row: { gap: 10, marginBottom: 12 },
   cell: { flex: 1, maxWidth: '32%' },
-  thumb: { width: '100%', aspectRatio: 0.75, borderRadius: 10 },
+  thumb: { width: '100%', aspectRatio: 0.75, borderRadius: 10, borderWidth: 1, borderColor: colors.frame },
   star: {
     position: 'absolute',
     right: 6,

@@ -22,6 +22,7 @@ const ICONS = {
   move: 'M5 12 H19 M13 6 L19 12 L13 18',
   reorder: 'M8 6 H19 M8 12 H19 M8 18 H19 M4 6 h.01 M4 12 h.01 M4 18 h.01',
   grip: 'M9 6 h.01 M15 6 h.01 M9 12 h.01 M15 12 h.01 M9 18 h.01 M15 18 h.01',
+  share: 'M12 14.5 V4 M7.5 8.5 L12 4 L16.5 8.5 M5 12.5 V18.5 A1.5 1.5 0 0 0 6.5 20 H17.5 A1.5 1.5 0 0 0 19 18.5 V12.5',
   pages: 'M7 4 H17 A1 1 0 0 1 18 5 V16 A1 1 0 0 1 17 17 H7 A1 1 0 0 1 6 16 V5 A1 1 0 0 1 7 4 Z M9 20 H18 A2 2 0 0 0 20 18 V8',
 };
 
@@ -160,6 +161,7 @@ export function Card({ children, style, onPress, onLongPress }) {
 export function Sheet({ visible, onClose, title, children }) {
   const sheetRef = useRef(null);
   const [lift, setLift] = useState(0);
+  const [kbOn, setKbOn] = useState(false);
   const liftRef = useRef(0);
   liftRef.current = lift;
 
@@ -168,19 +170,25 @@ export function Sheet({ visible, onClose, title, children }) {
   useEffect(() => {
     if (!visible || Platform.OS === 'web') {
       setLift(0);
+      setKbOn(false);
       return undefined;
     }
     const show = Keyboard.addListener('keyboardDidShow', (e) => {
       const keyboardTop = e.endCoordinates.screenY;
+      // 키보드가 떠 있는 동안은 시트 아래 여백(하단 바 몫)을 줄여서, 아래 버튼이 키보드에 딱 붙게 한다.
+      setKbOn(true);
       setTimeout(() => {
         if (!sheetRef.current) return;
         sheetRef.current.measureInWindow((x, y, w, h) => {
           const overlap = y + h - keyboardTop;
-          setLift(Math.max(0, liftRef.current + overlap + 12));
+          setLift(Math.max(0, liftRef.current + overlap));
         });
-      }, 60);
+      }, 110);
     });
-    const hide = Keyboard.addListener('keyboardDidHide', () => setLift(0));
+    const hide = Keyboard.addListener('keyboardDidHide', () => {
+      setLift(0);
+      setKbOn(false);
+    });
     return () => {
       show.remove();
       hide.remove();
@@ -191,7 +199,7 @@ export function Sheet({ visible, onClose, title, children }) {
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <View style={[styles.sheetWrap, { paddingBottom: lift }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <View style={styles.sheet} ref={sheetRef} collapsable={false}>
+        <View style={[styles.sheet, kbOn && styles.sheetKb]} ref={sheetRef} collapsable={false}>
           <View style={styles.sheetGrip} />
           {title ? <Text style={styles.sheetTitle}>{title}</Text> : null}
           <ScrollView style={{ maxHeight: 520 }} keyboardShouldPersistTaps="handled">
@@ -400,6 +408,7 @@ const styles = themedStyles(() => ({
     paddingBottom: 30,
     paddingTop: 10,
   },
+  sheetKb: { paddingBottom: 14 },
   sheetGrip: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: colors.line, marginBottom: 14 },
   sheetTitle: { fontFamily: font.bold, fontSize: 18, color: colors.ink, marginBottom: 8 },
   sheetItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 15 },

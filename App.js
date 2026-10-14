@@ -15,6 +15,7 @@ import ItemScreen from './src/screens/ItemScreen';
 import ViewerScreen from './src/screens/ViewerScreen';
 import ReorderScreen from './src/screens/ReorderScreen';
 import FavoritesScreen from './src/screens/FavoritesScreen';
+import SubjectOrderScreen from './src/screens/SubjectOrderScreen';
 
 let routeSeq = 0;
 const mk = (name, params) => ({ name, ...params, _k: ++routeSeq });
@@ -26,6 +27,7 @@ const SCREENS = {
   viewer: ViewerScreen,
   reorder: ReorderScreen,
   favorites: FavoritesScreen,
+  subjectOrder: SubjectOrderScreen,
 };
 
 function Root() {

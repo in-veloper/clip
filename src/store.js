@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { removeFile } from './files';
 import { SUBJECT_COLORS } from './theme';
+import { colorDistance } from './colorMath';
 
 const DATA_KEY = 'clip/data';
 const THEME_KEY = 'clip/theme';
@@ -59,7 +60,7 @@ export async function init() {
     const data = raw ? JSON.parse(raw) : {};
     emit({
       loaded: true,
-      subjects: data.subjects || [],
+      subjects: dedupeSubjectColors(data.subjects || []),
       items: data.items || [],
       lastSubjectId: data.lastSubjectId || null,
       lastView: data.lastView || null,
@@ -77,12 +78,67 @@ export function setTheme(theme) {
 
 /* ---------- 과목 ---------- */
 
+// 새 과목 색: 지금 쓰는 색들과 눈으로 가장 멀리 떨어진 팔레트 색.
+// 팔레트를 다 쓴 뒤에는 가장 적게 쓴 색부터 다시 쓴다.
+export function pickSubjectColor(colorsInUse) {
+  if (!colorsInUse.length) return SUBJECT_COLORS[0];
+  let best = null;
+  let bestScore = -1;
+  for (const c of SUBJECT_COLORS) {
+    const nearest = Math.min(...colorsInUse.map((u) => colorDistance(c, u)));
+    if (nearest > bestScore + 0.001) {
+      best = c;
+      bestScore = nearest;
+    }
+  }
+  if (bestScore >= 1) return best;
+  const count = {};
+  colorsInUse.forEach((c) => (count[c] = (count[c] || 0) + 1));
+  return SUBJECT_COLORS.reduce((a, c) => ((count[c] || 0) < (count[a] || 0) ? c : a), SUBJECT_COLORS[0]);
+}
+
+const TOO_CLOSE = 40;
+
+// 앞선 과목과 색이 같거나 비슷하면(예전 팔레트로 만든 과목 포함) 가장 안 비슷한 색으로 바꾼다.
+function dedupeSubjectColors(subjects) {
+  const kept = [];
+  let changed = false;
+  const out = subjects.map((s) => {
+    const nearest = kept.length ? Math.min(...kept.map((k) => colorDistance(s.color, k))) : Infinity;
+    if (nearest >= TOO_CLOSE) {
+      kept.push(s.color);
+      return s;
+    }
+    const next = pickSubjectColor(kept);
+    const nextNearest = Math.min(...kept.map((k) => colorDistance(next, k)));
+    if (nextNearest <= nearest) {
+      kept.push(s.color);
+      return s;
+    }
+    kept.push(next);
+    changed = true;
+    return { ...s, color: next };
+  });
+  return changed ? out : subjects;
+}
+
 export function addSubject(name) {
   const id = uid();
-  const subject = { id, name: name.trim(), color: SUBJECT_COLORS[state.subjects.length % SUBJECT_COLORS.length] };
+  const subject = { id, name: name.trim(), color: pickSubjectColor(state.subjects.map((s) => s.color)) };
   emit({ subjects: [...state.subjects, subject] });
   persist();
   return id;
+}
+
+export function reorderSubjects(orderedIds) {
+  const byId = {};
+  state.subjects.forEach((s) => (byId[s.id] = s));
+  const next = orderedIds.map((id) => byId[id]).filter(Boolean);
+  state.subjects.forEach((s) => {
+    if (!next.includes(s)) next.push(s);
+  });
+  emit({ subjects: next });
+  persist();
 }
 
 export function renameSubject(id, name) {

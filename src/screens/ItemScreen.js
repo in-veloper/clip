@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, Pressable } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, Pressable, BackHandler } from 'react-native';
 
 import {
   useStore,
@@ -14,7 +14,8 @@ import {
 } from '../store';
 import { scanPages } from '../scan';
 import { colors, font, themedStyles } from '../theme';
-import { Header, IconButton, Icon, Chip, Sheet, SheetItem, Empty, toast, confirmDialog } from '../ui';
+import { Header, IconButton, Icon, Chip, Sheet, SheetItem, Empty, Button, toast, confirmDialog } from '../ui';
+import { sharePages } from '../share';
 import { Thumb, NameSheet, PickSheet } from '../components/common';
 
 export default function ItemScreen({ route, nav }) {
@@ -25,6 +26,18 @@ export default function ItemScreen({ route, nav }) {
   const [pageMenu, setPageMenu] = useState(null);
   const [moving, setMoving] = useState(false);
   const [renaming, setRenaming] = useState(false);
+  // 공유할 사진 고르기 모드. null 이면 평소 화면, Set 이면 고른 페이지 id 들.
+  const [picked, setPicked] = useState(null);
+
+  // 고르는 중에 뒤로 가기를 누르면 화면을 나가지 말고 고르기만 끝낸다.
+  useEffect(() => {
+    if (picked === null) return undefined;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setPicked(null);
+      return true;
+    });
+    return () => sub.remove();
+  }, [picked === null]);
 
   if (!item) {
     return (
@@ -74,21 +87,57 @@ export default function ItemScreen({ route, nav }) {
   };
 
   const favCount = item.pages.filter((p) => p.fav).length;
+  const selecting = picked !== null;
+
+  const togglePick = (id) =>
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const allPicked = selecting && picked.size === item.pages.length;
+
+  const sendPicked = async () => {
+    // 고른 순서가 아니라 자료의 페이지 순서대로 공유한다
+    const pages = item.pages.filter((p) => picked.has(p.id));
+    if (!pages.length) return;
+    if (await sharePages(pages, itemTitle(item))) setPicked(null);
+  };
 
   return (
     <View style={styles.fill}>
-      <Header
-        title={itemTitle(item)}
-        subtitle={`${subjectName(state, item.subjectId)} · ${item.pages.length}페이지${favCount ? ` · 즐겨찾기 ${favCount}` : ''}`}
-        onBack={nav.pop}
-        right={<IconButton name="more" onPress={() => setMenu(true)} />}
-      />
+      {selecting ? (
+        <Header
+          title="공유할 사진 고르기"
+          subtitle={picked.size ? `${picked.size}장 선택` : '사진을 눌러서 고르세요'}
+          left={<IconButton name="close" onPress={() => setPicked(null)} />}
+          right={
+            <Pressable
+              hitSlop={10}
+              onPress={() => setPicked(allPicked ? new Set() : new Set(item.pages.map((p) => p.id)))}
+            >
+              <Text style={styles.allText}>{allPicked ? '선택 해제' : '전체 선택'}</Text>
+            </Pressable>
+          }
+        />
+      ) : (
+        <Header
+          title={itemTitle(item)}
+          subtitle={`${subjectName(state, item.subjectId)} · ${item.pages.length}페이지${favCount ? ` · 즐겨찾기 ${favCount}` : ''}`}
+          onBack={nav.pop}
+          right={<IconButton name="more" onPress={() => setMenu(true)} />}
+        />
+      )}
 
-      <View style={styles.actions}>
-        <Chip icon="scan" label="페이지 추가" onPress={addMore} />
-        <Chip icon="reorder" label="순서 변경" onPress={() => nav.push('reorder', { id: item.id })} />
-        <Chip icon="move" label="이동" onPress={() => setMoving(true)} />
-      </View>
+      {!selecting && (
+        <View style={styles.actions}>
+          <Chip icon="scan" label="페이지 추가" onPress={addMore} />
+          <Chip icon="reorder" label="순서 변경" onPress={() => nav.push('reorder', { id: item.id })} />
+          <Chip icon="share" label="공유" onPress={() => setPicked(new Set())} />
+        </View>
+      )}
 
       <FlatList
         data={item.pages}
@@ -97,13 +146,21 @@ export default function ItemScreen({ route, nav }) {
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.grid}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item: page, index }) => (
+        extraData={picked}
+        renderItem={({ item: page, index }) => {
+          const on = selecting && picked.has(page.id);
+          return (
           <Pressable
             style={styles.cell}
-            onPress={() => nav.push('viewer', { itemId: item.id, index })}
-            onLongPress={() => setPageMenu(page)}
+            onPress={() => (selecting ? togglePick(page.id) : nav.push('viewer', { itemId: item.id, index }))}
+            onLongPress={() => (selecting ? togglePick(page.id) : setPageMenu(page))}
           >
-            <Thumb file={page.file} style={styles.thumb} />
+            <Thumb file={page.file} style={[styles.thumb, selecting && !on && styles.thumbDim]} />
+            {selecting ? (
+              <View style={[styles.pick, on && styles.pickOn]}>
+                {on ? <Icon name="check" size={14} color="#fff" stroke={2.6} /> : null}
+              </View>
+            ) : null}
             <View style={styles.num}>
               <Text style={styles.numText}>{index + 1}</Text>
             </View>
@@ -113,8 +170,20 @@ export default function ItemScreen({ route, nav }) {
               </View>
             ) : null}
           </Pressable>
-        )}
+          );
+        }}
       />
+
+      {selecting && (
+        <View style={styles.footer}>
+          <Button
+            title={picked.size ? `${picked.size}장 공유` : '공유할 사진을 고르세요'}
+            icon="share"
+            disabled={!picked.size}
+            onPress={sendPicked}
+          />
+        </View>
+      )}
 
       <Sheet visible={menu} onClose={() => setMenu(false)} title={itemTitle(item)}>
         <SheetItem
@@ -143,6 +212,15 @@ export default function ItemScreen({ route, nav }) {
           onPress={() => {
             toggleFav(item.id, pageMenu.id);
             setPageMenu(null);
+          }}
+        />
+        <SheetItem
+          icon="share"
+          label="이 페이지 공유"
+          onPress={() => {
+            const page = pageMenu;
+            setPageMenu(null);
+            sharePages([page], itemTitle(item));
           }}
         />
         <SheetItem icon="trash" label="페이지 삭제" danger onPress={() => confirmDeletePage(pageMenu)} />
@@ -183,7 +261,25 @@ const styles = themedStyles(() => ({
   grid: { paddingHorizontal: 16, paddingBottom: 40 },
   row: { gap: 10, marginBottom: 10 },
   cell: { flex: 1, maxWidth: '32%' },
-  thumb: { width: '100%', aspectRatio: 0.75, borderRadius: 10 },
+  // 흰 종이 사진이 흰 바탕에 묻히지 않게 얇은 테두리로 칸을 나눈다
+  thumb: { width: '100%', aspectRatio: 0.75, borderRadius: 10, borderWidth: 1, borderColor: colors.frame },
+  thumbDim: { opacity: 0.55 },
+  pick: {
+    position: 'absolute',
+    left: 6,
+    top: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#fff',
+    backgroundColor: 'rgba(15,18,24,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+  allText: { fontFamily: font.semibold, fontSize: 14, color: colors.accent, paddingHorizontal: 4 },
+  footer: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
   num: {
     position: 'absolute',
     left: 6,

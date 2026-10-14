@@ -1,0 +1,18 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!--
+    스캔한 페이지 사진을 카톡 등 다른 앱으로 넘기려면 file:// 경로 대신 content:// 주소가
+    필요하다. 다른 라이브러리의 FileProvider 와 이름이 겹치면 매니페스트 병합이 깨지므로
+    전용 하위 클래스로 따로 등록한다.
+  -->
+  <application>
+    <provider
+      android:name="expo.modules.shareimages.ClipShareFileProvider"
+      android:authorities="${applicationId}.clipshare"
+      android:exported="false"
+      android:grantUriPermissions="true">
+      <meta-data
+        android:name="android.support.FILE_PROVIDER_PATHS"
+        android:resource="@xml/clip_share_paths" />
+    </provider>
+  </application>
+</manifest>

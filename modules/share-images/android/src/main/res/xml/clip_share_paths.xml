@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 공유할 수 있는 폴더: 앱 전용 폴더(스캔 페이지가 documentDirectory/pages 에 있다)와 캐시. -->
+<paths>
+  <files-path name="files" path="." />
+  <cache-path name="cache" path="." />
+</paths>

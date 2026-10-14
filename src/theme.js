@@ -10,6 +10,7 @@ export const palettes = {
     inkSoft: '#5B6271',
     inkFaint: '#9AA1AE',
     line: '#E4E7EC',
+    frame: '#D2D7DF', // 페이지 썸네일 테두리 — 흰 종이와 바탕을 갈라 줄 만큼만 진하게
     accent: '#3B5BFD',
     accentSoft: '#E8EDFF',
     star: '#F2A900',
@@ -25,6 +26,7 @@ export const palettes = {
     inkSoft: '#A5ABB8',
     inkFaint: '#6C7381',
     line: '#2A2F38',
+    frame: '#363C47',
     accent: '#6C86FF',
     accentSoft: '#1D2442',
     star: '#F5B921',
@@ -65,8 +67,20 @@ export const font = {
   bold: 'Pretendard-Bold',
 };
 
+// 과목 색. 가장 가까운 두 색의 차이(CIE Lab)가 30 이상이라 눈으로 쉽게 구분되는 12색이다.
 export const SUBJECT_COLORS = [
-  '#3B5BFD', '#16A085', '#E07A3F', '#9B5DE5', '#E0457B', '#13A3B5', '#C9A227', '#5E6AD2',
+  '#3B5BFD', // 파랑
+  '#E8833A', // 주황
+  '#2FB574', // 초록
+  '#E0457B', // 분홍
+  '#B14FE0', // 보라
+  '#F2A900', // 노랑
+  '#13A3B5', // 청록
+  '#E5534B', // 빨강
+  '#8BB918', // 연두
+  '#3BA7F5', // 하늘
+  '#A9774E', // 갈색
+  '#64748B', // 회청
 ];
 
 export const shadow = {

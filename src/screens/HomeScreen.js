@@ -194,7 +194,18 @@ export default function HomeScreen({ nav }) {
             {subjects.length > 0 ? <Text style={styles.sectionCount}>{subjects.length}</Text> : null}
           </View>
           {subjects.length > 0 ? (
-            <PillButton icon="plus" label="과목 추가" onPress={() => setRenaming({ id: null })} />
+            <View style={styles.sectionActions}>
+              {subjects.length > 1 ? (
+                <Pressable
+                  onPress={() => nav.push('subjectOrder')}
+                  hitSlop={8}
+                  style={({ pressed }) => [styles.orderBtn, pressed && { opacity: 0.7 }]}
+                >
+                  <Icon name="reorder" size={18} color={colors.inkSoft} />
+                </Pressable>
+              ) : null}
+              <PillButton icon="plus" label="과목 추가" onPress={() => setRenaming({ id: null })} />
+            </View>
           ) : null}
         </View>
 
@@ -301,6 +312,15 @@ const styles = themedStyles(() => ({
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
   section: { fontFamily: font.bold, fontSize: 17, color: colors.ink, marginLeft: 4 },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sectionActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  orderBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceAlt,
+  },
   sectionCount: {
     fontFamily: font.bold,
     fontSize: 12.5,
