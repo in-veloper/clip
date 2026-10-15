@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 
 import { importPage } from './files';
+import { toast } from './ui';
 
 const MAX_PAGES = 40;
 
@@ -39,9 +40,12 @@ export async function scanPages({ tag = '샘플' } = {}) {
   const result = await DocumentScanner.scanDocument({ maxNumDocuments: MAX_PAGES });
   if (result.status !== 'success' || !result.scannedImages || !result.scannedImages.length) return [];
 
+  // 위아래가 뒤집혀 찍힌 페이지는 바로 세워서 저장한다(orient.js)
+  const { uprightPage } = require('./orient');
+  toast('페이지 방향을 확인하는 중이에요');
   const files = [];
   for (const uri of result.scannedImages) {
-    files.push(await importPage(uri));
+    files.push(await importPage(await uprightPage(uri)));
   }
   return files;
 }
