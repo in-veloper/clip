@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "클리프",
+    "name": "CLIP",
     "slug": "clip",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "scheme": "clip",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,7 +17,7 @@
     },
     "android": {
       "package": "com.clip.app",
-      "versionCode": 6,
+      "versionCode": 7,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#081029",
